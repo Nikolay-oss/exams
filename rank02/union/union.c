@@ -32,12 +32,8 @@ void	ft_union(char **strs)
 
 int		main(int ac, char **av)
 {
-	if (ac != 3)
-	{
-		ft_putchar('\n');
-		return (0);
-	}
-	ft_union(++av);
+	if (ac == 3)
+		ft_union(++av);
 	ft_putchar('\n');
 	return (0);
 }

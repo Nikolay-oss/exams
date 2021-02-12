@@ -34,12 +34,8 @@ void	ft_inter(char **strs)
 
 int		main(int ac, char **av)
 {
-	if (ac != 3)
-	{
-		ft_putchar('\n');
-		return (0);
-	}
-	ft_inter(av + 2);
+	if (ac == 3)
+		ft_inter(av + 2);
 	ft_putchar('\n');
 	return (0);
 }
