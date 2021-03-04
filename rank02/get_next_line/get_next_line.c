@@ -42,8 +42,6 @@ int		get_next_line(char **line)
 	int		res;
 	char	*current;
 
-	if (!line)
-		return (-1);
 	if (!(*line = ft_strjoin("", "")))
 		return (-1);
 	while ((res = read(0, c, 1)) > 0)
