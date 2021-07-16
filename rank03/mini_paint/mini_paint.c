@@ -90,7 +90,7 @@ int	record_backgnd(t_canvas *canvas, char **buffer)
 	*buffer = calloc(size + 1, sizeof(char));
 	if (!*buffer)
 		return (1);
-	memset(*buffer, canvas->back_ground, size + 1);
+	memset(*buffer, canvas->back_ground, size);
 	return (0);
 }
 
@@ -120,7 +120,6 @@ void	record_rectangle(t_canvas *canvas, t_shape *shape, char **buffer)
 		j = 0;
 		while (j < canvas->height)
 		{
-			// isfill = in_rectangle(shape, (float)i, (float)j);
 			isfill = in_circle(shape, (float)i, (float)j);
 			if (shape->type == 'c' && isfill == 2)
 				*(*buffer + j * canvas->width + i) = shape->fill_chr;

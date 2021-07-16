@@ -54,10 +54,10 @@ void	init_canvas(t_canvas *canvas)
 void	init_shape(t_shape *shape)
 {
 	shape->type = 0;
-	shape->x = 0;
-	shape->y = 0;
-	shape->width = 0;
-	shape->height = 0;
+	shape->x = 0.0f;
+	shape->y = 0.0f;
+	shape->width = 0.0f;
+	shape->height = 0.0f;
 	shape->fill_chr = 0;
 }
 
@@ -91,7 +91,7 @@ int	record_backgnd(t_canvas *canvas, char **buffer)
 	*buffer = calloc(size + 1, sizeof(char));
 	if (!*buffer)
 		return (1);
-	memset(*buffer, canvas->back_ground, size + 1);
+	memset(*buffer, canvas->back_ground, size);
 	return (0);
 }
 
