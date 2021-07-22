@@ -3,15 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAXSIZE	300
-#define F_ERROR_MSG	"Error: Operation file corrupted\n"
+#define MAXSIZE 300
+#define ERRORMSG "Error: Operation file corrupted\n"
 
 typedef struct s_canvas
 {
-	int			width;
-	int			height;
-	char		back_ground;
-}				t_canvas;
+	int		width;
+	int		height;
+	char	chr_backgnd;
+}			t_canvas;
 
 typedef struct s_shape
 {
@@ -20,9 +20,25 @@ typedef struct s_shape
 	float	y;
 	float	width;
 	float	height;
-	char	fill_chr;
-}				t_shape;
+	char	chr_fill;
+}		t_shape;
 
+void	init_canvas(t_canvas *canvas)
+{
+	canvas->width = 0;
+	canvas->height = 0;
+	canvas->chr_backgnd = 0;
+}
+
+void	init_shape(t_shape *shape)
+{
+	shape->type = 0;
+	shape->x = 0.f;
+	shape->y = 0.f;
+	shape->width = 0.f;
+	shape->height = 0.f;
+	shape->chr_fill = 0;
+}
 
 size_t	ft_strlen(const char *str)
 {
@@ -40,58 +56,27 @@ int	exit_error(FILE *p_f, char *buffer, const char *error_msg)
 		fclose(p_f);
 	if (buffer)
 		free(buffer);
-	write(2, error_msg, ft_strlen(error_msg));
-	return (1);
-}
-
-void	init_canvas(t_canvas *canvas)
-{
-	canvas->height = 0;
-	canvas->width = 0;
-	canvas->back_ground = 0;
-}
-
-void	init_shape(t_shape *shape)
-{
-	shape->type = 0;
-	shape->x = 0.0f;
-	shape->y = 0.0f;
-	shape->width = 0.0f;
-	shape->height = 0.0f;
-	shape->fill_chr = 0;
-}
-
-int	check_borders(t_canvas *canvas)
-{
-	if ((canvas->width > 0 && canvas->width <= MAXSIZE)
-		|| (canvas->height > 0 && canvas->height <= MAXSIZE))
-	{
-		return (0);
-	}
+	write(1, error_msg, ft_strlen(error_msg));
 	return (1);
 }
 
 int	read_canvas(FILE *p_f, t_canvas *canvas)
 {
-	int	ret;
-
-	ret = fscanf(p_f, "%d %d %c\n", &canvas->width, &canvas->height, &canvas->back_ground);
-	if (ret < 0)
+	if (fscanf(p_f, "%d %d %c\n", &canvas->width, &canvas->height, &canvas->chr_backgnd) != 3)
 		return (1);
-	if (ret != 3)
+	if (canvas->width < 1 || canvas->width > MAXSIZE || canvas->height < 1 || canvas->height > MAXSIZE)
 		return (1);
-	return (check_borders(canvas));
+	return (0);
 }
 
-int	record_backgnd(t_canvas *canvas, char **buffer)
+int	set_backgnd(t_canvas *canvas, char **buffer)
 {
 	int	size;
 
 	size = canvas->width * canvas->height;
-	*buffer = calloc(size + 1, sizeof(char));
-	if (!*buffer)
+	if (!(*buffer = (char *)malloc(size * sizeof(char))))
 		return (1);
-	memset(*buffer, canvas->back_ground, size);
+	memset(*buffer, canvas->chr_backgnd, size);
 	return (0);
 }
 
@@ -102,15 +87,15 @@ int	in_rectangle(t_shape *shape, float x, float y)
 	{
 		return (0);
 	}
-	if (x - shape->x < 1.0f || shape->x + shape->width - x < 1.0f
-		|| y - shape->y < 1.0f || shape->y + shape->height - y < 1.0f)
+	if (x - shape->x < 1.f || shape->x + shape->width - x < 1.f
+		|| y - shape->y < 1.f || shape->y + shape->height - y < 1.f)
 	{
 		return (2);
 	}
 	return (1);
 }
 
-void	record_rectangle(t_canvas *canvas, t_shape *shape, char **buffer)
+void	set_shapes(t_canvas *canvas, t_shape *shape, char *buffer)
 {
 	int	i;
 	int	j;
@@ -122,15 +107,28 @@ void	record_rectangle(t_canvas *canvas, t_shape *shape, char **buffer)
 		j = 0;
 		while (j < canvas->height)
 		{
-			isfill = in_rectangle(shape, (float)i, (float)j);
-			if (shape->type == 'r' && isfill == 2)
-				*(*buffer + j * canvas->width + i) = shape->fill_chr;
-			if (shape->type == 'R' && isfill)
-				*(*buffer + j * canvas->width + i) = shape->fill_chr;
+			isfill = in_rectangle(shape, (float) i, (float) j);
+			if (isfill == 2 || (isfill && shape->type == 'R'))
+				*(buffer + j * canvas->width + i) = shape->chr_fill;
 			j++;
 		}
 		i++;
 	}
+}
+
+int	read_shapes(FILE *p_f, t_canvas *canvas, t_shape *shape, char *buffer)
+{
+	int	ret;
+
+	while ((ret = fscanf(p_f, "%c %f %f %f %f %c\n", &shape->type, &shape->x, &shape->y, &shape->width, &shape->height, &shape->chr_fill)) == 6)
+	{
+		if (shape->width <= 0.f || shape->height <= 0.f || (shape->type != 'r' && shape->type != 'R'))
+			return (1);
+		set_shapes(canvas, shape, buffer);
+	}
+	if (ret != -1)
+		return (1);
+	return (0);
 }
 
 void	draw(t_canvas *canvas, char *buffer)
@@ -145,29 +143,18 @@ void	draw(t_canvas *canvas, char *buffer)
 	}
 }
 
-int	check_shapes(t_shape *shape)
-{
-	if (shape->width <= 0 || shape->height <= 0)
-		return (1);
-	else if (shape->type != 'r' && shape->type != 'R')
-		return (1);
-	return (0);
-}
-
-int	read_shapes(FILE *p_f, t_canvas *canvas, char **buffer)
+int	parser(FILE *p_f, t_canvas *canvas, char **buffer)
 {
 	t_shape	shape;
-	int		ret;
 
+	init_canvas(canvas);
 	init_shape(&shape);
-	while ((ret = fscanf(p_f, "%c %f %f %f %f %c\n", &shape.type, &shape.x, &shape.y, &shape.width, &shape.height, &shape.fill_chr)) == 6)
-	{
-		if (check_shapes(&shape))
-			return (1);
-		record_rectangle(canvas, &shape, buffer);
-	}
-	if (ret != EOF)
+	if (read_canvas(p_f, canvas))
 		return (1);
+	if (set_backgnd(canvas, buffer))
+		return (exit_error(p_f, NULL, ERRORMSG));
+	if (read_shapes(p_f, canvas, &shape, *buffer))
+		return (exit_error(p_f, *buffer, ERRORMSG));
 	return (0);
 }
 
@@ -179,16 +166,12 @@ int	main(int ac, char **av)
 
 	p_f = NULL;
 	buffer = NULL;
-	if (ac < 2 || ac > 2)
+	if (ac != 2)
 		return (exit_error(NULL, NULL, "Error: argument\n"));
 	if (!(p_f = fopen(*(av + 1), "r")))
-		return (exit_error(p_f, NULL, F_ERROR_MSG));
-	if (read_canvas(p_f, &canvas))
-		return (exit_error(p_f, NULL, F_ERROR_MSG));
-	if (record_backgnd(&canvas, &buffer))
-		return (exit_error(p_f, buffer, F_ERROR_MSG));
-	if (read_shapes(p_f, &canvas, &buffer))
-		return (exit_error(p_f, buffer, F_ERROR_MSG));
+		return (exit_error(NULL, NULL, ERRORMSG));
+	if (parser(p_f, &canvas, &buffer))
+		return (1);
 	draw(&canvas, buffer);
 	free(buffer);
 	fclose(p_f);
