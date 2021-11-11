@@ -1,7 +1,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <wait.h>
+
+// #define UBUNTA
+
+#ifdef UBUNTA
+	#include <wait.h>
+#endif
 
 #define STDOUT 1
 #define STDIN 0
@@ -25,7 +30,8 @@ size_t ft_strlen(const char *s)
 	size_t i;
 
 	i = 0;
-	while (s[i++]);
+	while (s[i])
+		i++;
 	return i;
 }
 
@@ -172,7 +178,7 @@ void ft_cd(t_list *cmds)
 	{
 		print_error("error: cd: bad arguments\n");
 	}
-	else if (chdir(cmds->av[1]))
+	else if (chdir(cmds->av[1]) == -1)
 	{
 		print_error("error: cd: cannot change directory to ");
 		print_error(cmds->av[1]);
